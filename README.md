@@ -1,2 +1,2 @@
 # scripts
-Useful scripts i've used
+Useful scripts i've done
