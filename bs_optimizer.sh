@@ -15,6 +15,7 @@ fi
 SIZE=0
 TEMP_SIZE=0
 BEST_BS=0
+OS_TYPE=$(uname)
 
 for BLOCK_SIZE in 512 1024 2048 4096 8192 16384 32768 67108864 65536 131072 262144 524288 1048576 2097152 4194304 8388608 16777216 33554432 134217728
 do
@@ -24,7 +25,18 @@ do
 	sleep $TIME
 	kill -9 $pid
         wait $pid
-	TEMP_SIZE=$(stat -c "%s" $OUT_FILE)
+	case "$OS_TYPE" in
+	Darwin|*BSD)
+		TEMP_SIZE=$(stat -f "%z" $OUT_FILE)
+		;;
+	Linux)
+		TEMP_SIZE=$(stat -c "%s" $OUT_FILE)
+		;;
+	*)
+                echo "Your OS is not osX, *BSD, or Linux."
+		exit 1
+		;;
+	esac
 	if [ $TEMP_SIZE -gt $SIZE ]; then
 		BEST_BS=$BLOCK_SIZE
 		SIZE=$TEMP_SIZE
