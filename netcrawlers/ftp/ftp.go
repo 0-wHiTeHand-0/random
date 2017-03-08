@@ -7,7 +7,7 @@ import (
 				"regexp"
 				"sync"
 				"os"
-				"jlaffaye/ftp"
+				"github.com/0-wHiTeHand-0/ftp"
 )
 // Debido a malos funcionamientos de algunos FTPs, he modificado la libreria de jlaffaye para que meta Timeouts cada 3sg y no se queden conexiones establecidas.
 
