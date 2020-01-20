@@ -1,43 +1,43 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"html/template"
-   "regexp"
-   "bytes"
+    "log"
+    "net/http"
+    "html/template"
+    "regexp"
+    "bytes"
 
-	"github.com/gorilla/websocket"
+    "github.com/gorilla/websocket"
 )
+
+const emojiPattern = "[\\x{2712}\\x{2714}\\x{2716}\\x{271d}\\x{2721}\\x{2728}\\x{2733}\\x{2734}\\x{2744}\\x{2747}\\x{274c}\\x{274e}\\x{2753}-\\x{2755}\\x{2757}\\x{2763}\\x{2764}\\x{2795}-\\x{2797}\\x{27a1}\\x{27b0}\\x{27bf}\\x{2934}\\x{2935}\\x{2b05}-\\x{2b07}\\x{2b1b}\\x{2b1c}\\x{2b50}\\x{2b55}\\x{3030}\\x{303d}\\x{1f004}\\x{1f0cf}\\x{1f170}\\x{1f171}\\x{1f17e}\\x{1f17f}\\x{1f18e}\\x{1f191}-\\x{1f19a}\\x{1f201}\\x{1f202}\\x{1f21a}\\x{1f22f}\\x{1f232}-\\x{1f23a}\\x{1f250}\\x{1f251}\\x{1f300}-\\x{1f321}\\x{1f324}-\\x{1f393}\\x{1f396}\\x{1f397}\\x{1f399}-\\x{1f39b}\\x{1f39e}-\\x{1f3f0}\\x{1f3f3}-\\x{1f3f5}\\x{1f3f7}-\\x{1f4fd}\\x{1f4ff}-\\x{1f53d}\\x{1f549}-\\x{1f54e}\\x{1f550}-\\x{1f567}\\x{1f56f}\\x{1f570}\\x{1f573}-\\x{1f579}\\x{1f587}\\x{1f58a}-\\x{1f58d}\\x{1f590}\\x{1f595}\\x{1f596}\\x{1f5a5}\\x{1f5a8}\\x{1f5b1}\\x{1f5b2}\\x{1f5bc}\\x{1f5c2}-\\x{1f5c4}\\x{1f5d1}-\\x{1f5d3}\\x{1f5dc}-\\x{1f5de}\\x{1f5e1}\\x{1f5e3}\\x{1f5ef}\\x{1f5f3}\\x{1f5fa}-\\x{1f64f}\\x{1f680}-\\x{1f6c5}\\x{1f6cb}-\\x{1f6d0}\\x{1f6e0}-\\x{1f6e5}\\x{1f6e9}\\x{1f6eb}\\x{1f6ec}\\x{1f6f0}\\x{1f6f3}\\x{1f910}-\\x{1f918}\\x{1f980}-\\x{1f984}\\x{1f9c0}\\x{3297}\\x{3299}\\x{a9}\\x{ae}\\x{203c}\\x{2049}\\x{2122}\\x{2139}\\x{2194}-\\x{2199}\\x{21a9}\\x{21aa}\\x{231a}\\x{231b}\\x{2328}\\x{2388}\\x{23cf}\\x{23e9}-\\x{23f3}\\x{23f8}-\\x{23fa}\\x{24c2}\\x{25aa}\\x{25ab}\\x{25b6}\\x{25c0}\\x{25fb}-\\x{25fe}\\x{2600}-\\x{2604}\\x{260e}\\x{2611}\\x{2614}\\x{2615}\\x{2618}\\x{261d}\\x{2620}\\x{2622}\\x{2623}\\x{2626}\\x{262a}\\x{262e}\\x{262f}\\x{2638}-\\x{263a}\\x{2648}-\\x{2653}\\x{2660}\\x{2663}\\x{2665}\\x{2666}\\x{2668}\\x{267b}\\x{267f}\\x{2692}-\\x{2694}\\x{2696}\\x{2697}\\x{2699}\\x{269b}\\x{269c}\\x{26a0}\\x{26a1}\\x{26aa}\\x{26ab}\\x{26b0}\\x{26b1}\\x{26bd}\\x{26be}\\x{26c4}\\x{26c5}\\x{26c8}\\x{26ce}\\x{26cf}\\x{26d1}\\x{26d3}\\x{26d4}\\x{26e9}\\x{26ea}\\x{26f0}-\\x{26f5}\\x{26f7}-\\x{26fa}\\x{26fd}\\x{2702}\\x{2705}\\x{2708}-\\x{270d}\\x{270f}]|\\x{23}\\x{20e3}|\\x{2a}\\x{20e3}|\\x{30}\\x{20e3}|\\x{31}\\x{20e3}|\\x{32}\\x{20e3}|\\x{33}\\x{20e3}|\\x{34}\\x{20e3}|\\x{35}\\x{20e3}|\\x{36}\\x{20e3}|\\x{37}\\x{20e3}|\\x{38}\\x{20e3}|\\x{39}\\x{20e3}|\\x{1f1e6}[\\x{1f1e8}-\\x{1f1ec}\\x{1f1ee}\\x{1f1f1}\\x{1f1f2}\\x{1f1f4}\\x{1f1f6}-\\x{1f1fa}\\x{1f1fc}\\x{1f1fd}\\x{1f1ff}]|\\x{1f1e7}[\\x{1f1e6}\\x{1f1e7}\\x{1f1e9}-\\x{1f1ef}\\x{1f1f1}-\\x{1f1f4}\\x{1f1f6}-\\x{1f1f9}\\x{1f1fb}\\x{1f1fc}\\x{1f1fe}\\x{1f1ff}]|\\x{1f1e8}[\\x{1f1e6}\\x{1f1e8}\\x{1f1e9}\\x{1f1eb}-\\x{1f1ee}\\x{1f1f0}-\\x{1f1f5}\\x{1f1f7}\\x{1f1fa}-\\x{1f1ff}]|\\x{1f1e9}[\\x{1f1ea}\\x{1f1ec}\\x{1f1ef}\\x{1f1f0}\\x{1f1f2}\\x{1f1f4}\\x{1f1ff}]|\\x{1f1ea}[\\x{1f1e6}\\x{1f1e8}\\x{1f1ea}\\x{1f1ec}\\x{1f1ed}\\x{1f1f7}-\\x{1f1fa}]|\\x{1f1eb}[\\x{1f1ee}-\\x{1f1f0}\\x{1f1f2}\\x{1f1f4}\\x{1f1f7}]|\\x{1f1ec}[\\x{1f1e6}\\x{1f1e7}\\x{1f1e9}-\\x{1f1ee}\\x{1f1f1}-\\x{1f1f3}\\x{1f1f5}-\\x{1f1fa}\\x{1f1fc}\\x{1f1fe}]|\\x{1f1ed}[\\x{1f1f0}\\x{1f1f2}\\x{1f1f3}\\x{1f1f7}\\x{1f1f9}\\x{1f1fa}]|\\x{1f1ee}[\\x{1f1e8}-\\x{1f1ea}\\x{1f1f1}-\\x{1f1f4}\\x{1f1f6}-\\x{1f1f9}]|\\x{1f1ef}[\\x{1f1ea}\\x{1f1f2}\\x{1f1f4}\\x{1f1f5}]|\\x{1f1f0}[\\x{1f1ea}\\x{1f1ec}-\\x{1f1ee}\\x{1f1f2}\\x{1f1f3}\\x{1f1f5}\\x{1f1f7}\\x{1f1fc}\\x{1f1fe}\\x{1f1ff}]|\\x{1f1f1}[\\x{1f1e6}-\\x{1f1e8}\\x{1f1ee}\\x{1f1f0}\\x{1f1f7}-\\x{1f1fb}\\x{1f1fe}]|\\x{1f1f2}[\\x{1f1e6}\\x{1f1e8}-\\x{1f1ed}\\x{1f1f0}-\\x{1f1ff}]|\\x{1f1f3}[\\x{1f1e6}\\x{1f1e8}\\x{1f1ea}-\\x{1f1ec}\\x{1f1ee}\\x{1f1f1}\\x{1f1f4}\\x{1f1f5}\\x{1f1f7}\\x{1f1fa}\\x{1f1ff}]|\\x{1f1f4}\\x{1f1f2}|\\x{1f1f5}[\\x{1f1e6}\\x{1f1ea}-\\x{1f1ed}\\x{1f1f0}-\\x{1f1f3}\\x{1f1f7}-\\x{1f1f9}\\x{1f1fc}\\x{1f1fe}]|\\x{1f1f6}\\x{1f1e6}|\\x{1f1f7}[\\x{1f1ea}\\x{1f1f4}\\x{1f1f8}\\x{1f1fa}\\x{1f1fc}]|\\x{1f1f8}[\\x{1f1e6}-\\x{1f1ea}\\x{1f1ec}-\\x{1f1f4}\\x{1f1f7}-\\x{1f1f9}\\x{1f1fb}\\x{1f1fd}-\\x{1f1ff}]|\\x{1f1f9}[\\x{1f1e6}\\x{1f1e8}\\x{1f1e9}\\x{1f1eb}-\\x{1f1ed}\\x{1f1ef}-\\x{1f1f4}\\x{1f1f7}\\x{1f1f9}\\x{1f1fb}\\x{1f1fc}\\x{1f1ff}]|\\x{1f1fa}[\\x{1f1e6}\\x{1f1ec}\\x{1f1f2}\\x{1f1f8}\\x{1f1fe}\\x{1f1ff}]|\\x{1f1fb}[\\x{1f1e6}\\x{1f1e8}\\x{1f1ea}\\x{1f1ec}\\x{1f1ee}\\x{1f1f3}\\x{1f1fa}]|\\x{1f1fc}[\\x{1f1eb}\\x{1f1f8}]|\\x{1f1fd}\\x{1f1f0}|\\x{1f1fe}[\\x{1f1ea}\\x{1f1f9}]|\\x{1f1ff}[\\x{1f1e6}\\x{1f1f2}\\x{1f1fc}]";
 
 var clients = make(map[*websocket.Conn]bool)
 var broadcast = make(chan Message)
 
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+    CheckOrigin: func(r *http.Request) bool {
+        return true
+    },
 }
 
 type Message struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Message  string `json:"message"`
+    Email    string `json:"email"`
+    Username string `json:"username"`
+    Message  string `json:"message"`
 }
 
 func main() {
-   //Route to the HTML
-	http.HandleFunc("/test.html", filehandler)
-   //Route to the websockets server
-   http.HandleFunc("/websocketsserver", handleConnections)
+    http.HandleFunc("/PATH1", filehandler)
+    http.HandleFunc("/PATH2", handleConnections)
 
-	go handleMessages()
+    go handleMessages()
 
-	log.Println("new HTTPS server started on :8081")
-	err := http.ListenAndServeTLS(":8081", "fullchain.pem", "privkey.pem", nil)
-	if err != nil {
-		log.Fatal("ListenAndServeTLS: ", err)
-	}
+    log.Println("new HTTPS server started on :8081")
+    err := http.ListenAndServeTLS(":8081", "fullchain.pem", "privkey.pem", nil)
+    if err != nil {
+        log.Fatal("ListenAndServeTLS: ", err)
+    }
 }
 
 func filehandler(w http.ResponseWriter, req *http.Request) {
@@ -45,72 +45,89 @@ func filehandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
-	// Upgrade initial GET request to a websocket
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer ws.Close()
+    reg := regexp.MustCompile(`^(([[:print:]])|([\p{L}])|([\p{Po}])|([\p{Sc}])|(` + emojiPattern + `))+$`)
+    // Upgrade initial GET request to a websocket
+    ws, err := upgrader.Upgrade(w, r, nil)
+    if err != nil {
+        log.Println(err)
+        return
+    }
+    defer ws.Close()
 
-	// Register our new client
-	clients[ws] = true
+    // Register our new client
+    clients[ws] = true
 
-	for {
-		var msg Message
-		// Read in a new message as JSON and map it to a Message object
-		err := ws.ReadJSON(&msg)
-		if err != nil {
-			delete(clients, ws)
-			break
-		}
-		// Send the newly received message to the broadcast channel
-		broadcast <- msg
-	}
+    for {
+        var msg Message
+        // Read in a new message as JSON and map it to a Message object
+        err := ws.ReadJSON(&msg)
+        if err != nil {
+            delete(clients, ws)
+            break
+        }
+        if (!reg.MatchString(msg.Email)||(!reg.MatchString(msg.Username))||(!reg.MatchString(msg.Message))){
+           log.Println("Error -> ", msg)
+           go send_error(ws)
+        }else{
+           log.Println("Message -> ", msg)
+           // Send the newly received message to the broadcast channel
+           broadcast <- clean(msg)
+        }
+    }
+}
+
+func send_error(ws *websocket.Conn){
+   var m Message
+      m.Email = "Error"
+      m.Username = "Error"
+      m.Message = "Characters not allowed!"
+      err := ws.WriteJSON(m)
+      if err != nil {
+         ws.Close()
+            delete(clients, ws)
+      }
+}
+
+func clean(m Message) Message{
+   t, _ := template.New("foo").Parse(`{{define "T"}}{{.}}{{end}}`)
+      var buf bytes.Buffer
+      err := t.ExecuteTemplate(&buf, "T", m.Email)
+      if (err != nil){
+         log.Println("Error 2 -> ", m)
+            m.Email = "Error"
+      }else{
+         m.Email = buf.String()
+      }
+   buf.Reset()
+      err = t.ExecuteTemplate(&buf, "T", m.Username)
+      if (err != nil){
+         log.Println("Error 2 -> ", m)
+            m.Username = "Error"
+      }else{
+         m.Username = buf.String()
+      }
+   buf.Reset()
+      err = t.ExecuteTemplate(&buf, "T", m.Message)
+      if (err != nil){
+         log.Println("Error 2 -> ", m)
+            m.Message = "Error"
+      }else{
+         m.Message = buf.String()
+      }
+   return m
 }
 
 func handleMessages() {
-   t, _ := template.New("foo").Parse(`{{define "T"}}{{.}}{{end}}`)
-   var buf bytes.Buffer
-   var errorflag bool
-   r := regexp.MustCompile(`^(([[:print:]])|([\p{L}]))+$`)
-	for {
-		// Grab the next message from the broadcast channel
-	   msg := <-broadcast
-      errorflag = false
-      buf.Reset()
-      err := t.ExecuteTemplate(&buf, "T", msg.Email)
-      if ((err != nil) || (!r.MatchString(msg.Email))){
-         errorflag = true
-      }else{
-         msg.Email = buf.String()
-      }
-      buf.Reset()
-      err = t.ExecuteTemplate(&buf, "T", msg.Username)
-      if ((err != nil) || (!r.MatchString(msg.Username))){
-         errorflag = true
-      }else{
-         msg.Username = buf.String()
-      }
-      buf.Reset()
-      err = t.ExecuteTemplate(&buf, "T", msg.Message)
-      if ((err != nil) || (!r.MatchString(msg.Message))){
-         errorflag = true
-      }else{
-         msg.Message = buf.String()
-      }
-      if (errorflag){
-         log.Println("Error -> ", msg)
-         continue
-      }
-      log.Println(msg)
-		// Send it out to every client that is currently connected
-		for client := range clients {
-			err := client.WriteJSON(msg)
-			if err != nil {
-				client.Close()
-				delete(clients, client)
-			}
-		}
-	}
+   for {
+      // Grab the next message from the broadcast channel
+msg := <-broadcast
+        // Send it out to every client that is currently connected
+        for client := range clients {
+err := client.WriteJSON(msg)
+        if err != nil {
+           client.Close()
+              delete(clients, client)
+        }
+        }
+   }
 }

@@ -12,7 +12,7 @@
     <div class="row">
         <div class="col s12">
             <div class="card horizontal">
-                <div id="chat-messages" class="card-content" v-html="chatContent" style="height:300px;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;"></div>
+                <div id="chat-messages" class="card-content" v-html="chatContent" style="height:200px;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;"></div>
             </div>
         </div>
     </div>
@@ -44,6 +44,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/emojione/2.2.7/lib/js/emojione.min.js"></script>
 <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 <script>
+function htmlEntities(di) {
+    return String(di).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/\'/g, '&#x27;').replace(/\//g, '&#x2F;');
+}
+
 new Vue({
     el: '#app',
     data: {
@@ -56,11 +60,11 @@ new Vue({
     },
 created: function() {
         var self = this;
-        this.ws = new WebSocket('wss://websocketserver/path');
+        this.ws = new WebSocket('wss://server:port/PATH');
         this.ws.addEventListener('message', function(e) {
             var msg = JSON.parse(e.data);
             self.chatContent += '<div class="chip">'
-                    + '<img src="https://IMAGE.jpg">'
+                    + '<img src="https://IMAGE">'
                     + msg.username
                 + '</div>'
                 + emojione.toImage(msg.message) + '<br/>';
@@ -77,7 +81,7 @@ methods: {
                     JSON.stringify({
                         email: this.email,
                         username: this.username,
-                        message: $('<p>').html(this.newMsg).text()
+                        message: $('<p>').html(htmlEntities(this.newMsg)).text()
                     }
                 ));
                 this.newMsg = '';
@@ -92,8 +96,8 @@ join: function () {
                 alert('You must choose a username');
                 return
             }
-            this.email = $('<p>').html(this.email).text();
-            this.username = $('<p>').html(this.username).text();
+            this.email = $('<p>').html(htmlEntities(this.email)).text();
+            this.username = $('<p>').html(htmlEntities(this.username)).text();
             this.joined = true;
         }
     }
