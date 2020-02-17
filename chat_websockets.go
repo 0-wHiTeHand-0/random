@@ -6,7 +6,7 @@ import (
     "html/template"
     "regexp"
     "bytes"
-
+    "crypto/tls"
     "github.com/gorilla/websocket"
 )
 
@@ -17,7 +17,11 @@ var broadcast = make(chan Message)
 
 var upgrader = websocket.Upgrader{
     CheckOrigin: func(r *http.Request) bool {
-        return true
+        if (r.Header.Get("Origin") == "https://HOST:PORT"){
+           return true
+        }else{
+           return false
+           }
     },
 }
 
@@ -28,16 +32,34 @@ type Message struct {
 }
 
 func main() {
-    http.HandleFunc("/PATH1", filehandler)
-    http.HandleFunc("/PATH2", handleConnections)
+    mux := http.NewServeMux()
+
+    mux.HandleFunc("/PATH1", filehandler)
+    mux.HandleFunc("/PATH2", handleConnections)
+
+    cfg := &tls.Config{
+        MinVersion: tls.VersionTLS12,
+        CurvePreferences: []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+        PreferServerCipherSuites: true,
+        CipherSuites: []uint16{
+            tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+            tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+            tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+            tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+        },
+    }
+    srv := &http.Server{
+        Addr:         ":8081",
+        Handler:      mux,
+        TLSConfig:    cfg,
+    }
 
     go handleMessages()
-
     log.Println("new HTTPS server started on :8081")
-    err := http.ListenAndServeTLS(":8081", "fullchain.pem", "privkey.pem", nil)
-    if err != nil {
-        log.Fatal("ListenAndServeTLS: ", err)
-    }
+
+    log.Fatal(srv.ListenAndServeTLS("fullchain.pem", "privkey.pem"))
 }
 
 func filehandler(w http.ResponseWriter, req *http.Request) {
@@ -66,68 +88,68 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
             break
         }
         if (!reg.MatchString(msg.Email)||(!reg.MatchString(msg.Username))||(!reg.MatchString(msg.Message))){
-           log.Println("Error -> ", msg)
-           go send_error(ws)
+            log.Println("Error -> ", msg)
+            go send_error(ws)
         }else{
-           log.Println("Message -> ", msg)
-           // Send the newly received message to the broadcast channel
-           broadcast <- clean(msg)
+            log.Println("Message -> ", msg)
+            // Send the newly received message to the broadcast channel
+            broadcast <- clean(msg)
         }
     }
 }
 
 func send_error(ws *websocket.Conn){
-   var m Message
-      m.Email = "Error"
-      m.Username = "Error"
-      m.Message = "Characters not allowed!"
-      err := ws.WriteJSON(m)
-      if err != nil {
-         ws.Close()
-            delete(clients, ws)
-      }
+    var m Message
+    m.Email = "Error"
+    m.Username = "Error"
+    m.Message = "Characters not allowed!"
+    err := ws.WriteJSON(m)
+    if err != nil {
+        ws.Close()
+        delete(clients, ws)
+    }
 }
 
 func clean(m Message) Message{
-   t, _ := template.New("foo").Parse(`{{define "T"}}{{.}}{{end}}`)
-      var buf bytes.Buffer
-      err := t.ExecuteTemplate(&buf, "T", m.Email)
-      if (err != nil){
-         log.Println("Error 2 -> ", m)
-            m.Email = "Error"
-      }else{
-         m.Email = buf.String()
-      }
-   buf.Reset()
-      err = t.ExecuteTemplate(&buf, "T", m.Username)
-      if (err != nil){
-         log.Println("Error 2 -> ", m)
-            m.Username = "Error"
-      }else{
-         m.Username = buf.String()
-      }
-   buf.Reset()
-      err = t.ExecuteTemplate(&buf, "T", m.Message)
-      if (err != nil){
-         log.Println("Error 2 -> ", m)
-            m.Message = "Error"
-      }else{
-         m.Message = buf.String()
-      }
-   return m
+    t, _ := template.New("foo").Parse(`{{define "T"}}{{.}}{{end}}`)
+    var buf bytes.Buffer
+    err := t.ExecuteTemplate(&buf, "T", m.Email)
+    if (err != nil){
+        log.Println("Error 2 -> ", m)
+        m.Email = "Error"
+    }else{
+        m.Email = buf.String()
+    }
+    buf.Reset()
+    err = t.ExecuteTemplate(&buf, "T", m.Username)
+    if (err != nil){
+        log.Println("Error 2 -> ", m)
+        m.Username = "Error"
+    }else{
+        m.Username = buf.String()
+    }
+    buf.Reset()
+    err = t.ExecuteTemplate(&buf, "T", m.Message)
+    if (err != nil){
+        log.Println("Error 2 -> ", m)
+        m.Message = "Error"
+    }else{
+        m.Message = buf.String()
+    }
+    return m
 }
 
 func handleMessages() {
-   for {
-      // Grab the next message from the broadcast channel
-msg := <-broadcast
+    for {
+        // Grab the next message from the broadcast channel
+        msg := <-broadcast
         // Send it out to every client that is currently connected
         for client := range clients {
-err := client.WriteJSON(msg)
-        if err != nil {
-           client.Close()
-              delete(clients, client)
+            err := client.WriteJSON(msg)
+            if err != nil {
+                client.Close()
+                delete(clients, client)
+            }
         }
-        }
-   }
+    }
 }
