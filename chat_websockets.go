@@ -94,10 +94,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
             break
         }
         if (!reg.MatchString(msg.Email)||(!reg.MatchString(msg.Username))||(!reg.MatchString(msg.Message))){
-            log.Println("Error -> ", msg)
+            log.Println(r.RemoteAddr, "Error ->", msg)
             go send_error(ws)
         }else{
-            log.Println("Message -> ", msg)
+            log.Println(r.RemoteAddr, "Message ->", msg)
             // Send the newly received message to the broadcast channel
             broadcast <- clean(msg)
         }
