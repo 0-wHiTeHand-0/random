@@ -95,7 +95,13 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
         }
         if (!reg.MatchString(msg.Email)||(!reg.MatchString(msg.Username))||(!reg.MatchString(msg.Message))){
             log.Println(r.RemoteAddr, "Error ->", msg)
-            go send_error(ws)
+            go send_error(ws, "Caracteres no permitidos.")
+        }else if ((len(msg.Email)>40)||(len(msg.Username)>40)||(len(msg.Message)>2000)){
+            log.Println(r.RemoteAddr, "Error -> Too large message")
+            go send_error(ws, "Texto demasiado largo. Abrevia.")
+        }else if ((len(msg.Email)<1)||(len(msg.Username)<1)||(len(msg.Message)<1)){
+            log.Println(r.RemoteAddr, "Error ->", msg)
+            go send_error(ws, "Texto demasiado corto.")
         }else{
             log.Println(r.RemoteAddr, "Message ->", msg)
             // Send the newly received message to the broadcast channel
@@ -104,11 +110,11 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func send_error(ws *websocket.Conn){
+func send_error(ws *websocket.Conn, st_error string){
     var m Message
     m.Email = "Error"
     m.Username = "Error"
-    m.Message = "Characters not allowed!"
+    m.Message = st_error
     err := ws.WriteJSON(m)
     if err != nil {
         ws.Close()
