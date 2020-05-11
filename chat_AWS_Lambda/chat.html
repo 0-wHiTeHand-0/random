@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+<body>
+<main id="app">
+    <div class="row">
+        <div class="col s12">
+            <div class="card horizontal">
+                <div id="chat-messages" class="card-content" v-html="chatContent" style="height:300px;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="row" v-if="joined">
+        <div class="input-field col s8">
+            <input type="text" v-model="newMsg" @keyup.enter="send">
+        </div>
+        <div class="input-field col s4">
+            <button class="btn-floating btn-large waves-effect waves-light blue" @click="send">
+                Enviar
+            </button>
+        </div>
+    </div>
+    <div class="row" v-if="!joined">
+        <div class="input-field col s8">
+            <input type="text" v-model.trim="username" placeholder="Nombre de usuario">
+        </div>
+        <div class="input-field col s4">
+            <button class="waves-effect waves-light btn" @click="join()">
+                Registrarse
+            </button>
+        </div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
+<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+<script>
+function htmlEntities(di) {
+    return String(di).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/\'/g, '&#x27;').replace(/\//g, '&#x2F;');
+}
+
+var sendping = 0;
+
+new Vue({
+    el: '#app',
+    data: {
+        ws: null,
+        newMsg: '',
+        chatContent: '',
+        email: null,
+        username: null,
+        joined: false
+    },
+created: function() {
+        var self = this;
+        this.ws = new WebSocket('wss://<YOURSERVER>');
+
+        this.ws.addEventListener('message', function(e) {
+            if (e.data === 'OK'){
+                return;
+            }
+            var msg = JSON.parse(e.data);
+            self.chatContent += '<div class="chip">'
+                    + '<img src="https://i.ibb.co/KN8S8b4/2019-11-22-18-59.jpg">'
+                    + htmlEntities(msg.username)
+                + '</div>'
+                + htmlEntities(msg.message) + '<br/>';
+            Vue.nextTick(function () {
+                var element = document.getElementById('chat-messages');
+                element.scrollTop = element.scrollHeight;
+            });
+        });
+        window.setInterval(function(){//Send ping each 7 minutes in case of inactivity. Otherwise AWS closes the websocket.
+            if (sendping > 5){
+                self.ws.send(
+                    JSON.stringify({
+                        action: 'ping'
+                    })
+                );
+                sendping = 0;
+            }else{
+                sendping++;
+            }
+        }, 60000);
+    },
+methods: {
+        send: function () {
+            if (this.newMsg != '') {
+                this.ws.send(
+                    JSON.stringify({
+                        action: 'sendmessage',
+                        data: {
+                            username: this.username,
+                            message: $('<p>').html(htmlEntities(this.newMsg)).text()
+                        }
+                    }
+                ));
+                this.newMsg = '';
+                sendping = 0;
+            }
+        },
+join: function () {
+            if (!this.username) {
+                alert('Escoge un nombre de usuario.');
+                return;
+            }
+            this.username = $('<p>').html(htmlEntities(this.username)).text();
+            this.joined = true;
+        }
+    }
+});
+</script>
+</body>
+</html>
