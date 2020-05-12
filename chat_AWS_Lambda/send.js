@@ -33,14 +33,16 @@ exports.handler = async event => {
   }
 
   const postCalls = connectionData.Items.map(async ({ <ID> }) => {
-    try {
-      await apigwManagementApi.postToConnection({ ConnectionId: <ID>, Data: postData }).promise();
-    } catch (e) {
-      if (e.statusCode === 410) {
-        console.log(`Found stale connection, deleting ${<ID>}`);
-        await ddb.delete({ TableName: '<TABLENAME>', Key: { <ID> } }).promise();
-      } else {
-        throw e;
+    if (<ID> != event.requestContext.<ID>){
+      try {
+        await apigwManagementApi.postToConnection({ ConnectionId: <ID>, Data: postData }).promise();
+      } catch (e) {
+        if (e.statusCode === 410) {
+          console.log(`Found stale connection, deleting ${<ID>}`);
+          await ddb.delete({ TableName: '<TABLENAME>', Key: { <ID> } }).promise();
+        } else {
+          throw e;
+        }
       }
     }
   });
@@ -52,5 +54,5 @@ exports.handler = async event => {
     return { statusCode: 500, body: '{"username":"Error","message":"Error"}' };
   }
 
- return { statusCode: 200, body: 'OK' };
+ return { statusCode: 200, body: postData };
 };
