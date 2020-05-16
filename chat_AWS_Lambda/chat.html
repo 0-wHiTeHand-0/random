@@ -17,10 +17,10 @@
     </div>
     <div class="row" v-if="joined">
         <div class="input-field col s8">
-            <input type="text" v-model="newMsg" @keyup.enter="send">
+            <input type="text" v-model="newMsg" @keyup.enter="send()">
         </div>
         <div class="input-field col s4">
-            <button class="btn-floating btn-large waves-effect waves-light blue" @click="send">
+            <button class="btn-floating btn-large waves-effect waves-light blue" @click="send()">
                 Enviar
             </button>
         </div>
@@ -67,7 +67,7 @@ created: function() {
                     + htmlEncode(msg.username) + '</div>'
                 + htmlEncode(msg.message) + '<br>';
             Vue.nextTick(function () {
-                var element = document.getElementById('chat-messages');
+                var element = self.$el.querySelector("#chat-messages");
                 element.scrollTop = element.scrollHeight;
             });
         });
@@ -104,12 +104,12 @@ join: function () {
             if (!this.username) {
                 alert('Escoge un nombre de usuario.');
             }else{
-            	if (this.username.length > 40){
-            		alert('Nombre demasiado largo. Abrevia.');
-            	}else{
-					this.joined = true;
-            	}
-	    }
+                if (this.username.length > 40){
+                    alert('Nombre demasiado largo. Abrevia.');
+                }else{
+                    this.joined = true;
+                }
+            }
         }
     }
 });
