@@ -65,7 +65,7 @@ created: function() {
             self.chatContent += '<div class="chip">'
                     + '<img src="https://i.ibb.co/KN8S8b4/2019-11-22-18-59.jpg">'
                     + htmlEncode(msg.username) + '</div>'
-                + htmlEncode(msg.message) + '<br/>';
+                + htmlEncode(msg.message) + '<br>';
             Vue.nextTick(function () {
                 var element = document.getElementById('chat-messages');
                 element.scrollTop = element.scrollHeight;
@@ -109,7 +109,7 @@ join: function () {
             	}else{
 					this.joined = true;
             	}
-        	}
+	    }
         }
     }
 });
