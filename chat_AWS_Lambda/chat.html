@@ -41,21 +41,21 @@
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script>
 "use strict";
+var sendping = 0;
+var ws = null;
 new Vue({
     el: '#app',
     data: {
         items:[],
-        ws: null,
         newMsg: '',
-        sendping: 0,
         username: null,
         joined: false
     },
 created: function() {
         var self = this;
-        this.ws = new WebSocket('wss://<YOURSERVER>');
+        ws = new WebSocket('wss://<YOURSERVER>');
 
-        this.ws.addEventListener('message', function(e) {
+        ws.addEventListener('message', function(e) {
             if (e.data === 'OK'){
                 return;
             }
@@ -67,22 +67,22 @@ created: function() {
             });
         });
         window.setInterval(function(){
-            if (self.sendping > 5){
-                self.ws.send(
+            if (sendping > 5){
+                ws.send(
                     JSON.stringify({
                         action: 'ping'
                     })
                 );
-                self.sendping = 0;
+                sendping = 0;
             }else{
-                self.sendping++;
+                sendping++;
             }
         }, 60000);
     },
 methods: {
         send: function () {
             if (this.newMsg != '') {
-                this.ws.send(
+                ws.send(
                     JSON.stringify({
                         action: 'sendmessage',
                         data: {
@@ -92,7 +92,7 @@ methods: {
                     }
                 ));
                 this.newMsg = '';
-                this.sendping = 0;
+                sendping = 0;
             }
         },
 join: function () {
