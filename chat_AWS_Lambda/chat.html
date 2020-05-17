@@ -11,7 +11,9 @@
     <div class="row">
         <div class="col s12">
             <div class="card horizontal">
-                <div id="chat-messages" class="card-content" v-html="chatContent" style="height:300px;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;"></div>
+                <div id="chat-messages" class="card-content" style="height:300px;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;">
+                    <template v-for="item in items"><span class="chip"><img src="https://i.ibb.co/KN8S8b4/2019-11-22-18-59.jpg">{{ item[0] }}</span>{{ item[1] }}<br></template>
+                </div>
             </div>
         </div>
     </div>
@@ -39,17 +41,13 @@
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script>
 "use strict";
-function htmlEncode(di) {
-    return String(di).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/\'/g, '&#x27;').replace(/\//g, '&#x2F;');
-}
-var sendping = 0;
 new Vue({
     el: '#app',
     data: {
+        items:[],
         ws: null,
         newMsg: '',
-        chatContent: '',
-        email: null,
+        sendping: 0,
         username: null,
         joined: false
     },
@@ -62,25 +60,22 @@ created: function() {
                 return;
             }
             var msg = JSON.parse(e.data);
-            self.chatContent += '<div class="chip">'
-                    + '<img src="https://i.ibb.co/KN8S8b4/2019-11-22-18-59.jpg">'
-                    + htmlEncode(msg.username) + '</div>'
-                + htmlEncode(msg.message) + '<br>';
+            self.items.push([msg.username, msg.message]);
             Vue.nextTick(function () {
                 var element = self.$el.querySelector("#chat-messages");
                 element.scrollTop = element.scrollHeight;
             });
         });
         window.setInterval(function(){
-            if (sendping > 5){
+            if (self.sendping > 5){
                 self.ws.send(
                     JSON.stringify({
                         action: 'ping'
                     })
                 );
-                sendping = 0;
+                self.sendping = 0;
             }else{
-                sendping++;
+                self.sendping++;
             }
         }, 60000);
     },
@@ -97,7 +92,7 @@ methods: {
                     }
                 ));
                 this.newMsg = '';
-                sendping = 0;
+                this.sendping = 0;
             }
         },
 join: function () {
