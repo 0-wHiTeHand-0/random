@@ -41,7 +41,7 @@
 <script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script>
 "use strict";
-var sendping = 0;
+var sendping = 1;
 var ws = null;
 new Vue({
     el: '#app',
@@ -51,7 +51,7 @@ new Vue({
         username: null,
         joined: false
     },
-created: function() {
+    created: function() {
         var self = this;
         ws = new WebSocket('wss://<YOURSERVER>');
 
@@ -59,7 +59,7 @@ created: function() {
             if (e.data === 'OK'){
                 return;
             }
-            var msg = JSON.parse(e.data);
+            var msg = JSON.parse(e.data);//Trusted input
             self.items.push([msg.username, msg.message]);
             Vue.nextTick(function () {
                 var element = self.$el.querySelector("#chat-messages");
@@ -67,40 +67,45 @@ created: function() {
             });
         });
         window.setInterval(function(){
-            if (sendping > 5){
+            if (sendping == 8){//Ping each 8min
                 ws.send(
                     JSON.stringify({
                         action: 'ping'
                     })
-                );
-                sendping = 0;
+                    );
+                sendping = 1;
             }else{
                 sendping++;
             }
         }, 60000);
     },
-methods: {
+    methods: {
         send: function () {
-            if (this.newMsg != '') {
-                ws.send(
-                    JSON.stringify({
-                        action: 'sendmessage',
-                        data: {
-                            username: this.username,
-                            message: this.newMsg
-                        }
-                    }
-                ));
-                this.newMsg = '';
-                sendping = 0;
+            if (this.newMsg == '') {
+                return;
             }
+            if (this.newMsg.length > 2000){
+                alert("El texto tiene " + this.newMsg.length + " caracteres. Máximo permitido: 2000");
+                return;
+            }
+            ws.send(
+                JSON.stringify({
+                    action: 'sendmessage',
+                    data: {
+                        username: this.username,
+                        message: this.newMsg
+                    }
+                }
+                ));
+            this.newMsg = '';
+            sendping = 1;
         },
-join: function () {
+        join: function () {
             if (!this.username) {
-                alert('Escoge un nombre de usuario.');
+                alert("Escoge un nombre de usuario.");
             }else{
                 if (this.username.length > 40){
-                    alert('Nombre demasiado largo. Abrevia.');
+                    alert("Nombre tiene " + this.username.length + " caracteres. Máximo permitido: 40");
                 }else{
                     this.joined = true;
                 }
