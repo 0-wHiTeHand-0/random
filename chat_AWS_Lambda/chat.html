@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 <body>
@@ -11,7 +10,7 @@
     <div class="row">
         <div class="col s12">
             <div class="card horizontal">
-                <div id="chat-messages" class="card-content" style="height:300px;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;word-wrap:break-word">
+                <div id="chat-messages" class="card-content" style="height:70vh;overflow-y:scroll;padding:0px;bottom:0;overflow-anchor:none;width:100%;word-wrap:break-word">
                     <template v-for="(item, index) in items"><hr v-if="index > 0" style="border-top: 1px dotted green;width:90%"><span class="chip"><img src="https://i.ibb.co/KN8S8b4/2019-11-22-18-59.jpg">{{ item[0] }}</span>{{ item[1] }}</template>
                 </div>
             </div>
@@ -53,7 +52,7 @@ new Vue({
     },
     created: function() {
         var self = this;
-        ws = new WebSocket('wss://<YOURSERVER>');
+        ws = new WebSocket('wss://WEBSOCKETSERVER');
 
         ws.addEventListener('message', function(e) {
             if (e.data === 'OK'){
